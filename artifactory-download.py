@@ -35,6 +35,17 @@ def getUrl(itemValue, itemClassifier, itemExtension):
         itemClassifier = '-' + itemClassifier
     return [args.repoUrl + '/' + args.package + '/' + args.artifact + '/' + args.version + '/' , args.artifact + '-' + itemValue + itemClassifier+'.' + itemExtension]
 
+def getText(nodelist):
+    # Iterate all Nodes aggregate TEXT_NODE
+    rc = []
+    for node in nodelist:
+        if node.nodeType == node.TEXT_NODE:
+            rc.append(node.data)
+        else:
+            # Recursive
+            rc.append(getText(node.childNodes))
+    return ''.join(rc)
+
 fileUrl = []
 
 try:
@@ -44,17 +55,12 @@ try:
         xmldoc = minidom.parseString(html)
         for v in xmldoc.getElementsByTagName('snapshotVersion'):
             classifierList = v.getElementsByTagName('classifier')
+            itemClassifier = getText(classifierList)
             itemExtension = v.getElementsByTagName('extension')[0].firstChild.nodeValue
             itemValue = v.getElementsByTagName('value')[0].firstChild.nodeValue
-            if len(args.classifier)>0 and len(classifierList) > 0:
-                itemClassifier = classifierList[0].firstChild.nodeValue
-                if args.classifier == itemClassifier:
-                    fileUrl = getUrl(itemValue, itemClassifier, itemExtension)
-                    break
-            else:
-                if itemExtension == args.extension:
-                    fileUrl = getUrl(itemValue, '', itemExtension)
-                    break
+            if args.classifier == itemClassifier and itemExtension == args.extension:
+                fileUrl = getUrl(itemValue, itemClassifier, itemExtension)
+                break
     else:
         fileUrl = getUrl(args.version, args.classifier, args.extension)
 
@@ -72,4 +78,3 @@ except urllib2.HTTPError as e:
     print e.msg
 except IOError as e:
     print e.strerror, ':', args.path
-
